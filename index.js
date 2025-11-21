@@ -24,7 +24,7 @@ app.use(express.json());
 
 
 // MongoDB Connection
-const uri = `mongodb+srv://zap-shift:8pi0F5rqKqKWPV1l@cluster0.neniktd.mongodb.net/?appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.neniktd.mongodb.net/?appName=Cluster0`;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -50,8 +50,9 @@ async function run() {
     });
 
     app.post("/parcels",async (req, res) => {
-   const contribution = req.body;
-      const result = await ParcelsCollection.insertOne(contribution);
+      const parcel = req.body;
+      parcel.createdAt=new Date();
+      const result = await ParcelsCollection.insertOne(parcel);
       res.send(result);
     });
     app.get("/parcels",async (req, res) => {
@@ -63,14 +64,44 @@ async function run() {
         query.EmailAddress=email
         
       }
+      const option={sort:{createdAt:-1}}
 
-      const result = await ParcelsCollection.find(query).toArray();
+      const result = await ParcelsCollection.find(query,option).toArray();
       res.send(result);
     } catch (err) {
       console.error(err);
       res.status(500).send({ message: "Failed to fetch user issues" });
     }
   });
+
+  app.get("/parcels/:id",async (req, res)=>{
+
+    try {
+     const id = req.params.id;
+     const result = await ParcelsCollection.findOne({
+       _id: new ObjectId(id),
+     });
+     res.send(result);
+   } catch (err) {
+     console.error(err);
+     res.status(500).send({ message: "Failed to delete issue" });
+   }
+
+  })
+
+  // delete 
+  app.delete("/parcels/:id",async (req, res) => {
+   try {
+     const id = req.params.id;
+     const result = await ParcelsCollection.deleteOne({
+       _id: new ObjectId(id),
+     });
+     res.send(result);
+   } catch (err) {
+     console.error(err);
+     res.status(500).send({ message: "Failed to delete issue" });
+   }
+ });
 
     // //  All Public Issues
     // app.get("/issues", async (req, res) => {
